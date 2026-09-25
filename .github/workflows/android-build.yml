@@ -62,6 +62,35 @@ jobs:
           PROJECT_DIR=$(dirname "$SETTINGS_FILE")
           echo "PROJECT_DIR=$PROJECT_DIR" >> "$GITHUB_ENV"
           echo "Android project found at: $PROJECT_DIR"
+          
+      - name: Configure Kotlin JVM target
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path("app/build.gradle.kts")
+          text = path.read_text()
+
+          import_line = "import org.jetbrains.kotlin.gradle.dsl.JvmTarget\n"
+
+          if "import org.jetbrains.kotlin.gradle.dsl.JvmTarget" not in text:
+              text = import_line + text
+
+          if "jvmTarget.set(JvmTarget.JVM_17)" not in text:
+              text += """
+
+          kotlin {
+              compilerOptions {
+                  jvmTarget.set(JvmTarget.JVM_17)
+              }
+          }
+          """
+
+          path.write_text(text)
+          print("Kotlin JVM target configured to 17")
+          PY
+
 
       - name: Build debug APK
         working-directory: ${{ env.PROJECT_DIR }}
